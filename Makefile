@@ -1,4 +1,4 @@
-.PHONY: check-tagref check-ruff check-pyright check test upgrade-libs install-ruff install-pytest install-dev-tools build api-server worker sync venv deploy clean clean-cache
+.PHONY: check-tagref check-ruff check-pyright check test upgrade-libs install-ruff install-pytest install-pyright install-dev-tools build api-server worker sync venv deploy clean clean-cache
 
 HOME := $(shell echo $$HOME)
 HERE := $(shell echo $$PWD)
@@ -98,8 +98,10 @@ install-pytest: pyproject.toml    ## Install pytest and configure it in pyprojec
 		echo 'asyncio_default_fixture_loop_scope = "function"' >> pyproject.toml; \
 	fi
 
-install-dev-tools: install-ruff install-pytest    ## Install development tools (pyright)
+install-pyright:    ## Install pyright
 	uv add pyright --group dev
+
+install-dev-tools: install-ruff install-pytest install-pyright    ## Install all development tools
 
 build: check    ## Build the deployment artifact
 	uv build
