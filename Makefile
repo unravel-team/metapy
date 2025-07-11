@@ -1,4 +1,4 @@
-.PHONY: check-tagref check-ruff check-pyright check test upgrade-libs build api-server worker sync venv deploy clean clean-cache
+.PHONY: check-tagref check-ruff check-pyright check test upgrade-libs install-ruff install-dev-tools build api-server worker sync venv deploy clean clean-cache
 
 HOME := $(shell echo $$HOME)
 HERE := $(shell echo $$PWD)
@@ -47,8 +47,45 @@ test:    ## Run all the tests for the code
 upgrade-libs:    ## Install all the deps to their latest versions
 	uv sync --upgrade
 
-install-dev-tools:    ## Install development tools (ruff, pyright, pytest)
-	uv add ruff pyright pytest --group dev
+pyproject.toml:    ## Create pyproject.toml if it doesn't exist
+	@if [ ! -f pyproject.toml ]; then \
+		echo "Creating pyproject.toml..."; \
+		echo '[build-system]' > pyproject.toml; \
+		echo 'requires = ["hatchling"]' >> pyproject.toml; \
+		echo 'build-backend = "hatchling.build"' >> pyproject.toml; \
+		echo '' >> pyproject.toml; \
+		echo '[project]' >> pyproject.toml; \
+		echo 'name = "your-project-name"' >> pyproject.toml; \
+		echo 'version = "0.1.0"' >> pyproject.toml; \
+		echo 'description = ""' >> pyproject.toml; \
+		echo 'authors = []' >> pyproject.toml; \
+		echo '' >> pyproject.toml; \
+	fi
+
+install-ruff: pyproject.toml    ## Install ruff and configure it in pyproject.toml
+	uv add ruff --group dev
+	@if ! grep -q "\[tool.ruff.lint\]" pyproject.toml; then \
+		echo '' >> pyproject.toml; \
+		echo '[tool.ruff.lint]' >> pyproject.toml; \
+		echo 'select = [' >> pyproject.toml; \
+		echo '    # pycodestyle' >> pyproject.toml; \
+		echo '    "E",' >> pyproject.toml; \
+		echo '    # Pyflakes' >> pyproject.toml; \
+		echo '    "F",' >> pyproject.toml; \
+		echo '    # pyupgrade' >> pyproject.toml; \
+		echo '    "UP",' >> pyproject.toml; \
+		echo '    # flake8-bugbear' >> pyproject.toml; \
+		echo '    "B",' >> pyproject.toml; \
+		echo '    # flake8-simplify' >> pyproject.toml; \
+		echo '    "SIM",' >> pyproject.toml; \
+		echo '    # isort' >> pyproject.toml; \
+		echo '    "I",' >> pyproject.toml; \
+		echo ']' >> pyproject.toml; \
+		echo 'ignore = ["E501"]' >> pyproject.toml; \
+	fi
+
+install-dev-tools: install-ruff    ## Install development tools (ruff, pyright, pytest)
+	uv add pyright pytest --group dev
 
 build: check    ## Build the deployment artifact
 	uv build
