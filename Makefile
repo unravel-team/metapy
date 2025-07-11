@@ -1,4 +1,4 @@
-.PHONY: check-tagref check-ruff check-pyright check test upgrade-libs install-ruff install-dev-tools build api-server worker sync venv deploy clean clean-cache
+.PHONY: check-tagref check-ruff check-pyright check test upgrade-libs install-ruff install-pytest install-dev-tools build api-server worker sync venv deploy clean clean-cache
 
 HOME := $(shell echo $$HOME)
 HERE := $(shell echo $$PWD)
@@ -84,8 +84,22 @@ install-ruff: pyproject.toml    ## Install ruff and configure it in pyproject.to
 		echo 'ignore = ["E501"]' >> pyproject.toml; \
 	fi
 
-install-dev-tools: install-ruff    ## Install development tools (ruff, pyright, pytest)
-	uv add pyright pytest --group dev
+install-pytest: pyproject.toml    ## Install pytest and configure it in pyproject.toml
+	uv add pytest --group dev
+	@if ! grep -q "\[tool.pytest.ini_options\]" pyproject.toml; then \
+		echo '' >> pyproject.toml; \
+		echo '[tool.pytest.ini_options]' >> pyproject.toml; \
+		echo 'testpaths = ["tests"]' >> pyproject.toml; \
+		echo 'addopts = "-v --tb=short"' >> pyproject.toml; \
+		echo 'asyncio_mode = "auto"' >> pyproject.toml; \
+		echo 'log_cli = true' >> pyproject.toml; \
+		echo 'log_cli_level = "INFO"' >> pyproject.toml; \
+		echo 'log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"' >> pyproject.toml; \
+		echo 'asyncio_default_fixture_loop_scope = "function"' >> pyproject.toml; \
+	fi
+
+install-dev-tools: install-ruff install-pytest    ## Install development tools (pyright)
+	uv add pyright --group dev
 
 build: check    ## Build the deployment artifact
 	uv build
