@@ -47,6 +47,9 @@ test:    ## Run all the tests for the code
 upgrade-libs:    ## Install all the deps to their latest versions
 	uv sync --upgrade
 
+install-dev-tools:    ## Install development tools (ruff, pyright, pytest)
+	uv add ruff pyright pytest --group dev
+
 build: check    ## Build the deployment artifact
 	uv build
 
