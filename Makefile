@@ -16,36 +16,16 @@ help:    ## A brief listing of all available commands
 		substr($$0, index($$0,"##")+3) \
 	}' $(MAKEFILE_LIST)
 
-CONVENTIONS.md:   ## Check if the CONVENTIONS file exists, if not, inform the user
-	@echo "Download the CONVENTIONS.md file from the [[https://github.com/unravel-team/metapy][metapy]] project"
+sync:
+	uv sync --frozen --no-cache
 
-.aider.conf.yml:   ## Check if the Aider configuration file exists, if not, inform the user
-	@echo "Download the .aider.conf.yml file from the [[https://github.com/unravel-team/metapy][metapy]] project"
+.venv: sync
 
-check-tagref:
-	@if ! command -v tagref >/dev/null 2>&1; then \
-		echo "tagref executable not found. Please install it from https://github.com/stepchowfun/tagref/releases/"; \
-		exit 1; \
-	fi
-	tagref
-
-check-ruff:
-	uv run ruff check -n --fix
-
-check-pyright:
-	uv run pyright
-
-check: check-ruff check-pyright check-tagref    ## Check that the code is well linted, well typed, well documented
-	@echo "All checks passed!"
-
-format: check-ruff
-	uv run ruff format
-
-test:    ## Run all the tests for the code
-	uv run pytest
-
-upgrade-libs:    ## Install all the deps to their latest versions
-	uv sync --upgrade
+venv: .venv    ## Create the virtual env and activate it
+	@echo "Virtual environment created at .venv/"
+	@echo "To activate it:"
+	@echo "  bash/zsh: source .venv/bin/activate"
+	@echo "  fish:     source .venv/bin/activate.fish"
 
 pyproject.toml:    ## Create pyproject.toml if it doesn't exist
 	@if [ ! -f pyproject.toml ]; then \
@@ -101,7 +81,38 @@ install-pytest: pyproject.toml    ## Install pytest and configure it in pyprojec
 install-pyright:    ## Install pyright
 	uv add pyright --group dev
 
-install-dev-tools: install-ruff install-pytest install-pyright    ## Install all development tools
+CONVENTIONS.md:   ## Check if the CONVENTIONS file exists, if not, inform the user
+	@echo "Download the CONVENTIONS.md file from the [[https://github.com/unravel-team/metapy][metapy]] project"
+
+.aider.conf.yml:   ## Check if the Aider configuration file exists, if not, inform the user
+	@echo "Download the .aider.conf.yml file from the [[https://github.com/unravel-team/metapy][metapy]] project"
+
+install-dev-tools: install-ruff install-pytest install-pyright CONVENTIONS.md .aider.conf.yml    ## Install all development tools
+
+upgrade-libs:    ## Install all the deps to their latest versions
+	uv sync --upgrade
+
+check-tagref:
+	@if ! command -v tagref >/dev/null 2>&1; then \
+		echo "tagref executable not found. Please install it from https://github.com/stepchowfun/tagref/releases/"; \
+		exit 1; \
+	fi
+	tagref
+
+check-ruff:
+	uv run ruff check -n --fix
+
+check-pyright:
+	uv run pyright
+
+check: check-ruff check-pyright check-tagref    ## Check that the code is well linted, well typed, well documented
+	@echo "All checks passed!"
+
+format: check-ruff
+	uv run ruff format
+
+test:    ## Run all the tests for the code
+	uv run pytest
 
 build: check    ## Build the deployment artifact
 	uv build
@@ -125,14 +136,3 @@ clean:     ## Delete any existing artifacts
 	rm -rf build/
 	rm -rf dist/
 	rm -rf *.egg-info/
-
-sync:
-	uv sync --frozen --no-cache
-
-.venv: sync
-
-venv: .venv    ## Create the virtual env and activate it
-	@echo "Virtual environment created at .venv/"
-	@echo "To activate it:"
-	@echo "  bash/zsh: source .venv/bin/activate"
-	@echo "  fish:     source .venv/bin/activate.fish"
