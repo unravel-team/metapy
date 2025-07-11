@@ -87,7 +87,10 @@ CONVENTIONS.md:   ## Check if the CONVENTIONS file exists, if not, inform the us
 .aider.conf.yml:   ## Check if the Aider configuration file exists, if not, inform the user
 	@echo "Download the .aider.conf.yml file from the [[https://github.com/unravel-team/metapy][metapy]] project"
 
-install-dev-tools: install-ruff install-pytest install-pyright CONVENTIONS.md .aider.conf.yml    ## Install all development tools
+.gitignore:   ## Check if a .gitignore file exists, if not, inform the user
+	@echo "Download the .gitignore file from the [[https://github.com/unravel-team/metapy][metapy]] project"
+
+install-dev-tools: install-ruff install-pytest install-pyright CONVENTIONS.md .aider.conf.yml .gitignore    ## Install all development tools
 
 upgrade-libs:    ## Install all the deps to their latest versions
 	uv sync --upgrade
