@@ -65,7 +65,7 @@ install-ruff: pyproject.toml    ## Install ruff and configure it in pyproject.to
 	fi
 
 install-pytest: pyproject.toml    ## Install pytest and configure it in pyproject.toml
-	uv add pytest --group dev
+	uv add pytest pytest-asyncio --group dev
 	@if ! grep -q "\[tool.pytest.ini_options\]" pyproject.toml; then \
 		echo '' >> pyproject.toml; \
 		echo '[tool.pytest.ini_options]' >> pyproject.toml; \
