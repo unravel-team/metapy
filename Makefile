@@ -1,4 +1,4 @@
-.PHONY: check-tagref check-ruff check-pyright check test upgrade-libs install-ruff install-pytest install-pyright install-dev-tools build api-server worker sync venv deploy clean clean-cache
+.PHONY: check-tagref check-ruff check-pyright check format test upgrade-libs install-ruff install-pytest install-pyright install-tagref install-dev-tools build api-server worker sync venv deploy clean-cache clean
 
 HOME := $(shell echo $$HOME)
 HERE := $(shell echo $$PWD)
@@ -16,18 +16,27 @@ help:    ## A brief listing of all available commands
 		substr($$0, index($$0,"##")+3) \
 	}' $(MAKEFILE_LIST)
 
+.env: .env_sample    ## Copy .env_sample to .env if .env doesn't exist
+	@if [ ! -f .env ]; then \
+		echo "Creating .env from .env_sample..."; \
+		cp .env_sample .env; \
+		echo "✓ .env created. Please edit it with your actual values."; \
+	else \
+		echo ".env already exists, skipping..."; \
+	fi
+
 sync:
 	uv sync --frozen --no-cache
 
 .venv: sync
 
-venv: .venv    ## Create the virtual env and activate it
+venv: .venv .env    ## Create the .venv and the .env files
 	@echo "Virtual environment created at .venv/"
 	@echo "To activate it:"
 	@echo "  bash/zsh: source .venv/bin/activate"
 	@echo "  fish:     source .venv/bin/activate.fish"
 
-pyproject.toml:    ## Create pyproject.toml if it doesn't exist
+pyproject.toml:
 	@if [ ! -f pyproject.toml ]; then \
 		echo "Creating pyproject.toml..."; \
 		echo '[build-system]' > pyproject.toml; \
@@ -42,7 +51,7 @@ pyproject.toml:    ## Create pyproject.toml if it doesn't exist
 		echo '' >> pyproject.toml; \
 	fi
 
-install-ruff: pyproject.toml    ## Install ruff and configure it in pyproject.toml
+install-ruff: pyproject.toml
 	uv add ruff --group dev
 	@if ! grep -q "\[tool.ruff.lint\]" pyproject.toml; then \
 		echo '' >> pyproject.toml; \
@@ -64,7 +73,7 @@ install-ruff: pyproject.toml    ## Install ruff and configure it in pyproject.to
 		echo 'ignore = ["E501"]' >> pyproject.toml; \
 	fi
 
-install-pytest: pyproject.toml    ## Install pytest and configure it in pyproject.toml
+install-pytest: pyproject.toml
 	uv add pytest pytest-asyncio --group dev
 	@if ! grep -q "\[tool.pytest.ini_options\]" pyproject.toml; then \
 		echo '' >> pyproject.toml; \
@@ -78,32 +87,34 @@ install-pytest: pyproject.toml    ## Install pytest and configure it in pyprojec
 		echo 'asyncio_default_fixture_loop_scope = "function"' >> pyproject.toml; \
 	fi
 
-install-pyright:    ## Install pyright
+install-pyright:
 	uv add pyright --group dev
 
-CONVENTIONS.md:   ## Check if the CONVENTIONS file exists, if not, inform the user
+CONVENTIONS.md:
 	@echo "Download the CONVENTIONS.md file from the [[https://github.com/unravel-team/metapy][metapy]] project"
 
-.aider.conf.yml:   ## Check if the Aider configuration file exists, if not, inform the user
+.aider.conf.yml:
 	@echo "Download the .aider.conf.yml file from the [[https://github.com/unravel-team/metapy][metapy]] project"
 
-.gitignore:   ## Check if a .gitignore file exists, if not, inform the user
+.gitignore:
 	@echo "Download the .gitignore file from the [[https://github.com/unravel-team/metapy][metapy]] project"
 
-install-dev-tools: install-ruff install-pytest install-pyright CONVENTIONS.md .aider.conf.yml .gitignore    ## Install all development tools
+install-tagref:
+	@if ! command -v tagref >/dev/null 2>&1; then \
+		echo "tagref executable not found. Please install it from https://github.com/stepchowfun/tagref?tab=readme-ov-file#installation-instructions"; \
+		exit 1; \
+	fi
+
+install-dev-tools: install-ruff install-pytest install-pyright install-tagref CONVENTIONS.md .aider.conf.yml .gitignore    ## Install all development tools
 
 upgrade-libs:    ## Install all the deps to their latest versions
 	uv sync --upgrade
 
-check-tagref:
-	@if ! command -v tagref >/dev/null 2>&1; then \
-		echo "tagref executable not found. Please install it from https://github.com/stepchowfun/tagref/releases/"; \
-		exit 1; \
-	fi
+check-tagref: install-tagref
 	tagref
 
 check-ruff:
-	uv run ruff check -n --fix
+	uv run ruff check -n
 
 check-pyright:
 	uv run pyright
@@ -111,23 +122,27 @@ check-pyright:
 check: check-ruff check-pyright check-tagref    ## Check that the code is well linted, well typed, well documented
 	@echo "All checks passed!"
 
-format: check-ruff
+format:  ## Format the code using ruff
+	uv run ruff check -n --fix
 	uv run ruff format
+
+build: check     ## Build the deployment artifact
+	uv build
+
+up:     ## Bring up all the local infra (docker-compose) and synthetic data
+	docker compose up
+
+logs:
+	docker compose logs
 
 test:    ## Run all the tests for the code
 	uv run pytest
 
-build: check    ## Build the deployment artifact
-	uv build
-
-deploy: build    ## Deploy the current code to production
-	@echo "Run temporal deployment commands here!"
-
 api-server:    ## Run the FastAPI server locally
-	uv run python run_api.py
+	uv run -m unravel.fastapi.main
 
 worker:   ## Run the Worker server locally
-	uv run python run_worker.py
+	uv run -m unravel.temporal.worker
 
 clean-cache:    ## Clean UV Cache (only needed in extreme conditions)
 	@echo "Cleaning cache! This removes all downloaded deps!"
@@ -139,3 +154,9 @@ clean:     ## Delete any existing artifacts
 	rm -rf build/
 	rm -rf dist/
 	rm -rf *.egg-info/
+
+down:       ## Bring down all the local infra (docker-compose)
+	docker compose down -v
+
+deploy: build    ## Deploy the current code to production
+	@echo "Run temporal deployment commands here!"
