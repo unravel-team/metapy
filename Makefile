@@ -109,13 +109,10 @@ install-tagref:
 		exit 1; \
 	fi
 
-install-dev-tools: install-ruff install-pytest install-pyright install-tagref CONVENTIONS.md .aider.conf.yml .gitignore    ## Install all development tools
 .PHONY: install-bandit
 install-bandit:
 	uv tool install bandit
 
-upgrade-libs:    ## Install all the deps to their latest versions
-	uv sync --upgrade
 .git/hooks/pre-push:
 	@echo "Setting up Git hooks..."
 	@cp dev_tools/hooks/pre-push .git/hooks/pre-push
@@ -125,6 +122,10 @@ upgrade-libs:    ## Install all the deps to their latest versions
 
 .PHONY: install-hooks
 install-hooks: .git/hooks/pre-push
+
+.PHONY: install-dev-tools
+install-dev-tools: install-ruff install-pytest install-ty install-tagref install-bandit install-hooks AGENTS.md .aider.conf.yml .gitignore    ## Install all development tools
+
 .PHONY: check-bandit
 check-bandit:
 	bandit -c .bandit.yml -r src/
@@ -137,12 +138,6 @@ check-tagref: install-tagref
 check-ruff:
 	uv run ruff check -n src tests
 
-check: check-ruff check-pyright check-tagref    ## Check that the code is well linted, well typed, well documented
-	@echo "All checks passed!"
-
-format:  ## Format the code using ruff
-	uv run ruff check -n --fix
-	uv run ruff format
 .PHONY: check-ty
 check-ty:
 	uv run ty check src tests
@@ -167,15 +162,42 @@ up:   ## Bring up all the local infra (docker-compose) and synthetic data
 logs:
 	docker compose logs
 
-test:    ## Run all the tests for the code
-	uv run pytest
+.PHONY: migrate
+migrate:    ## Run Alembic database migrations
+	uv run python -m alembic upgrade head
 
-.PHONY: api-server
-api-server:    ## Run the FastAPI server locally
+.PHONY: server
+server:    ## Run the FastAPI server locally
 	ENABLE_TRACING=true uv run -m unravel.fastapi.main
 
-worker:   ## Run the Worker server locally
-	uv run -m unravel.temporal.worker
+.PHONY: check
+check: check-ruff check-tagref check-ty check-bandit    ## Check that the code is well linted, well typed, well documented
+	@echo "All checks passed!"
+
+.PHONY: format
+format:  ## Format the code using ruff
+	uv run ruff check -n --fix
+	uv run ruff format
+
+.PHONY: megalinter
+megalinter:
+	docker run --rm -v "$(HERE):/tmp/lint" oxsecurity/megalinter:v8
+
+.PHONY: test
+test:    ## Run only the tests in tests/no_reqs folder
+	uv run pytest tests/no_reqs
+
+.PHONY: test-llm
+test-llm:    ## Run only the tests in tests/requires_env folder
+	uv run pytest tests/requires_env
+
+.PHONY: test-integration
+test-integration:    ## Run the integration tests for the code
+	uv run pytest -m "integration"
+
+.PHONY: upgrade-libs
+upgrade-libs:    ## Upgrade all the deps to their latest versions
+	uv sync --upgrade
 
 .PHONY: clean-cache
 clean-cache:    ## Clean UV Cache (only needed in extreme conditions)
