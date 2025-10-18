@@ -194,5 +194,86 @@ clean:     ## Delete any existing artifacts
 down:       ## Bring down all the local infra (docker-compose)
 	docker compose down -v
 
-deploy: build    ## Deploy the current code to production
-	@echo "Run temporal deployment commands here!"
+.PHONY: backup-current-image
+backup-current-image:
+	@echo "Backing up currently running image..."
+	@if [ -f .fly_image ]; then \
+		mv .fly_image .fly_image.backup; \
+		echo "✅ Backed up current .fly_image to .fly_image.backup"; \
+	fi
+
+.fly_image:
+	@IMAGE=$$(flyctl image show --app metapy | awk 'NR>2 && NF>0 {print $$2"/"$$3":"$$4; exit}'); \
+	echo "$$IMAGE" > .fly_image; \
+	echo "✅ Current production image saved: $$IMAGE"
+
+.PHONY: tag-deploy-internal
+tag-deploy-internal: .fly_image
+	@if [ -f .can_tag ]; then \
+		TAG="stable-$$(date +%Y-%m-%d)"; \
+		IMAGE=$$(cat .fly_image); \
+		if git tag -m "$$(printf 'image: %s' "$$IMAGE")" "$$TAG" 2>/dev/null; then \
+			echo "✅ Tagged current commit as $$TAG"; \
+			rm .can_tag; \
+		else \
+			echo "⚠️  Tag $$TAG already exists, skipping tag creation"; \
+			echo "Image: $$IMAGE"; \
+		fi; \
+	fi
+
+.PHONY: deploy-internal
+deploy-internal:
+	@echo "Deploying to production..."
+	@if flyctl deploy --config fly.toml; then \
+		echo "✅ Deployment successful!"; \
+	    touch .can_tag; \
+	else \
+		echo "❌ Deployment failed!"; \
+		if [ -f .fly_image.backup ]; then \
+			echo "Working image in: .fly_image.backup"; \
+		fi; \
+		exit 1; \
+	fi
+
+.PHONY: deploy
+deploy: build backup-current-image deploy-internal tag-deploy-internal    ## Deploy with backup and auto-tagging
+
+.PHONY: deploy-reuse-image
+deploy-reuse-image:	.fly_image    ## Deploy only config changes to production, reusing the latest image
+	@echo "Deploying config-only changes..."
+	@IMAGE=$$(cat .fly_image); \
+	echo "Using current production image: $$IMAGE"; \
+	if flyctl deploy --config fly.toml --image "$$IMAGE"; then \
+		echo "✅ Config deployment successful!"; \
+	else \
+		echo "❌ Config deployment failed!"; \
+		exit 1; \
+	fi
+
+.PHONY: rollback
+rollback:    ## Rollback to the previous version stored in backup
+	@if [ ! -f .fly_image.backup ]; then \
+		echo "❌ No backup image found (.fly_image.backup missing)"; \
+		echo "Cannot rollback without a backup image."; \
+		exit 1; \
+	fi
+	@BACKUP_IMAGE=$$(cat .fly_image.backup); \
+	echo "Rolling back to: $$BACKUP_IMAGE"; \
+	if flyctl deploy --config fly.toml --image "$$BACKUP_IMAGE"; then \
+		if [ -f .fly_image ]; then \
+			BAD_DEPLOY_IMAGE=$$(cat .fly_image); \
+			echo "Overwriting bad deploy image: $$BAD_DEPLOY_IMAGE"; \
+		fi; \
+		mv .fly_image.backup .fly_image; \
+		echo "✅ Rollback successful! Restored to: $$BACKUP_IMAGE"; \
+	else \
+		echo "❌ Rollback failed!"; \
+		exit 1; \
+	fi
+
+.PHONY: deploy-build-only
+deploy-build-only:
+	flyctl deploy --config fly.toml --build-only
+	@echo "✅ Build-only Deploy complete! Please update .fly_image manually!"
+.PHONY: prepare
+prepare: deploy-build-only backup-current-image    ## Build the latest code and upload image to fly.io. Useful in hot-swap and migration situations
