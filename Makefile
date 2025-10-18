@@ -110,9 +110,15 @@ install-tagref:
 	fi
 
 install-dev-tools: install-ruff install-pytest install-pyright install-tagref CONVENTIONS.md .aider.conf.yml .gitignore    ## Install all development tools
+.PHONY: install-bandit
+install-bandit:
+	uv tool install bandit
 
 upgrade-libs:    ## Install all the deps to their latest versions
 	uv sync --upgrade
+.PHONY: check-bandit
+check-bandit:
+	bandit -c .bandit.yml -r src/
 
 .PHONY: check-tagref
 check-tagref: install-tagref
