@@ -15,10 +15,10 @@ help:    ## A brief listing of all available commands
 		substr($$0, index($$0,"##")+3) \
 	}' $(MAKEFILE_LIST)
 
-.env: .env_sample    ## Copy .env_sample to .env if .env doesn't exist
+.env: .env.sample    ## Copy .env.sample to .env if .env doesn't exist
 	@if [ ! -f .env ]; then \
-		echo "Creating .env from .env_sample..."; \
-		cp .env_sample .env; \
+		echo "Creating .env from .env.sample..."; \
+		cp .env.sample .env; \
 		echo "✓ .env created. Please edit it with your actual values."; \
 	else \
 		echo ".env already exists, skipping..."; \
