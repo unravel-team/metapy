@@ -151,7 +151,16 @@ check-ty:
 build: check     ## Build the deployment artifact
 	uv build
 
-up:     ## Bring up all the local infra (docker-compose) and synthetic data
+.PHONY: docker-build
+docker-build:   ## Build the FastAPI server Dockerfile
+	docker build -f Dockerfile -t metapy:latest -t metapy:$$(git rev-parse --short HEAD) .
+
+.PHONY: docker-compose-build
+docker-compose-build:  ## Build all the local infra (docker-compose)
+	docker compose build
+
+.PHONY: up
+up:   ## Bring up all the local infra (docker-compose) and synthetic data
 	docker compose up
 
 .PHONY: logs
