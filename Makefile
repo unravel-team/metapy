@@ -116,6 +116,15 @@ install-bandit:
 
 upgrade-libs:    ## Install all the deps to their latest versions
 	uv sync --upgrade
+.git/hooks/pre-push:
+	@echo "Setting up Git hooks..."
+	@cp dev_tools/hooks/pre-push .git/hooks/pre-push
+	@chmod +x .git/hooks/pre-push
+	@echo "✅ Git hooks installed successfully!"
+	@echo "The pre-push hook will run make check, make format, and make test before each push."
+
+.PHONY: install-hooks
+install-hooks: .git/hooks/pre-push
 .PHONY: check-bandit
 check-bandit:
 	bandit -c .bandit.yml -r src/
