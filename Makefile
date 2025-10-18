@@ -1,5 +1,3 @@
-.PHONY: check-tagref check-ruff check-pyright check format test upgrade-libs install-ruff install-pytest install-pyright install-tagref install-dev-tools build api-server worker sync venv deploy clean-cache clean
-
 HOME := $(shell echo $$HOME)
 HERE := $(shell echo $$PWD)
 
@@ -9,6 +7,7 @@ SHELL = /bin/bash -Eeu
 
 .DEFAULT_GOAL := help
 
+.PHONY: help
 help:    ## A brief listing of all available commands
 	@awk '/^[a-zA-Z0-9_-]+:.*##/ { \
 		printf "%-25s # %s\n", \
@@ -51,6 +50,7 @@ pyproject.toml:
 		echo '' >> pyproject.toml; \
 	fi
 
+.PHONY: install-ruff
 install-ruff: pyproject.toml
 	uv add ruff --group dev
 	@if ! grep -q "\[tool.ruff.lint\]" pyproject.toml; then \
@@ -73,6 +73,7 @@ install-ruff: pyproject.toml
 		echo 'ignore = ["E501"]' >> pyproject.toml; \
 	fi
 
+.PHONY: install-pytest
 install-pytest: pyproject.toml
 	uv add pytest pytest-asyncio --group dev
 	@if ! grep -q "\[tool.pytest.ini_options\]" pyproject.toml; then \
@@ -99,6 +100,7 @@ CONVENTIONS.md:
 .gitignore:
 	@echo "Download the .gitignore file from the [[https://github.com/unravel-team/metapy][metapy]] project"
 
+.PHONY: install-tagref
 install-tagref:
 	@if ! command -v tagref >/dev/null 2>&1; then \
 		echo "tagref executable not found. Please install it from https://github.com/stepchowfun/tagref?tab=readme-ov-file#installation-instructions"; \
@@ -110,11 +112,13 @@ install-dev-tools: install-ruff install-pytest install-pyright install-tagref CO
 upgrade-libs:    ## Install all the deps to their latest versions
 	uv sync --upgrade
 
+.PHONY: check-tagref
 check-tagref: install-tagref
 	tagref
 
+.PHONY: check-ruff
 check-ruff:
-	uv run ruff check -n
+	uv run ruff check -n src tests
 
 check-pyright:
 	uv run pyright
@@ -126,28 +130,33 @@ format:  ## Format the code using ruff
 	uv run ruff check -n --fix
 	uv run ruff format
 
+.PHONY: build
 build: check     ## Build the deployment artifact
 	uv build
 
 up:     ## Bring up all the local infra (docker-compose) and synthetic data
 	docker compose up
 
+.PHONY: logs
 logs:
 	docker compose logs
 
 test:    ## Run all the tests for the code
 	uv run pytest
 
+.PHONY: api-server
 api-server:    ## Run the FastAPI server locally
-	uv run -m unravel.fastapi.main
+	ENABLE_TRACING=true uv run -m unravel.fastapi.main
 
 worker:   ## Run the Worker server locally
 	uv run -m unravel.temporal.worker
 
+.PHONY: clean-cache
 clean-cache:    ## Clean UV Cache (only needed in extreme conditions)
 	@echo "Cleaning cache! This removes all downloaded deps!"
 	uv cache clean
 
+.PHONY: clean
 clean:     ## Delete any existing artifacts
 	find . -type f -name "*.pyc" -delete
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -155,6 +164,7 @@ clean:     ## Delete any existing artifacts
 	rm -rf dist/
 	rm -rf *.egg-info/
 
+.PHONY: down
 down:       ## Bring down all the local infra (docker-compose)
 	docker compose down -v
 
