@@ -24,11 +24,12 @@ help:    ## A brief listing of all available commands
 		echo ".env already exists, skipping..."; \
 	fi
 
-sync:
+.venv:
+	uv venv
+	uv lock
 	uv sync --frozen --no-cache
 
-.venv: sync
-
+.PHONY: venv
 venv: .venv .env    ## Create the .venv and the .env files
 	@echo "Virtual environment created at .venv/"
 	@echo "To activate it:"
