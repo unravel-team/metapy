@@ -89,8 +89,9 @@ install-pytest: pyproject.toml
 		echo 'asyncio_default_fixture_loop_scope = "function"' >> pyproject.toml; \
 	fi
 
-install-pyright:
-	uv add pyright --group dev
+.PHONY: install-ty
+install-ty:
+	uv add ty --group dev
 
 CONVENTIONS.md:
 	@echo "Download the CONVENTIONS.md file from the [[https://github.com/unravel-team/metapy][metapy]] project"
@@ -121,15 +122,15 @@ check-tagref: install-tagref
 check-ruff:
 	uv run ruff check -n src tests
 
-check-pyright:
-	uv run pyright
-
 check: check-ruff check-pyright check-tagref    ## Check that the code is well linted, well typed, well documented
 	@echo "All checks passed!"
 
 format:  ## Format the code using ruff
 	uv run ruff check -n --fix
 	uv run ruff format
+.PHONY: check-ty
+check-ty:
+	uv run ty check src tests
 
 .PHONY: build
 build: check     ## Build the deployment artifact
