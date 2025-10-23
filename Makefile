@@ -65,7 +65,7 @@ pyproject.toml:
 
 .PHONY: install-ruff
 install-ruff: pyproject.toml
-	uv add ruff --group dev --bounds exact
+	uv add ruff --group dev --preview-features add-bounds --bounds exact
 	@if ! grep -q "\[tool.ruff.lint\]" pyproject.toml; then \
 		echo '' >> pyproject.toml; \
 		echo '[tool.ruff.lint]' >> pyproject.toml; \
@@ -88,7 +88,7 @@ install-ruff: pyproject.toml
 
 .PHONY: install-pytest
 install-pytest: pyproject.toml
-	uv add pytest pytest-asyncio --group dev --bounds exact
+	uv add pytest pytest-asyncio --group dev --preview-features add-bounds --bounds exact
 	@if ! grep -q "\[tool.pytest.ini_options\]" pyproject.toml; then \
 		echo '' >> pyproject.toml; \
 		echo '[tool.pytest.ini_options]' >> pyproject.toml; \
@@ -103,7 +103,7 @@ install-pytest: pyproject.toml
 
 .PHONY: install-ty
 install-ty:
-	uv add ty --group dev --bounds exact
+	uv add ty --group dev --preview-features add-bounds --bounds exact
 
 AGENTS.md:
 	@echo "Download the CONVENTIONS.md file from the [[https://github.com/unravel-team/metapy][metapy]] project, then symlink it to AGENTS.md and CLAUDE.md"
