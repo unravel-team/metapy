@@ -15,6 +15,9 @@ help:    ## A brief listing of all available commands
 		substr($$0, index($$0,"##")+3) \
 	}' $(MAKEFILE_LIST)
 
+.env.sample:
+	touch .env.sample
+
 .env: .env.sample    ## Copy .env.sample to .env if .env doesn't exist
 	@if [ ! -f .env ]; then \
 		echo "Creating .env from .env.sample..."; \
@@ -24,7 +27,13 @@ help:    ## A brief listing of all available commands
 		echo ".env already exists, skipping..."; \
 	fi
 
-.venv:
+tests:
+	mkdir tests
+
+src:
+	mkdir -p src/metapy && touch src/metapy/__init__.py
+
+.venv: pyproject.toml tests src
 	uv venv
 	uv lock
 	uv sync --frozen --no-cache
@@ -44,16 +53,19 @@ pyproject.toml:
 		echo 'build-backend = "hatchling.build"' >> pyproject.toml; \
 		echo '' >> pyproject.toml; \
 		echo '[project]' >> pyproject.toml; \
-		echo 'name = "your-project-name"' >> pyproject.toml; \
+		echo 'name = "metapy"' >> pyproject.toml; \
 		echo 'version = "0.1.0"' >> pyproject.toml; \
 		echo 'description = ""' >> pyproject.toml; \
 		echo 'authors = []' >> pyproject.toml; \
+		echo 'keywords = []' >> pyproject.toml; \
+		echo 'packages = [{include="src"}]' >> pyproject.toml; \
+	    echo 'requires-python = ">=3.14.0"' >> pyproject.toml; \
 		echo '' >> pyproject.toml; \
 	fi
 
 .PHONY: install-ruff
 install-ruff: pyproject.toml
-	uv add ruff --group dev
+	uv add ruff --group dev --bounds exact
 	@if ! grep -q "\[tool.ruff.lint\]" pyproject.toml; then \
 		echo '' >> pyproject.toml; \
 		echo '[tool.ruff.lint]' >> pyproject.toml; \
@@ -76,7 +88,7 @@ install-ruff: pyproject.toml
 
 .PHONY: install-pytest
 install-pytest: pyproject.toml
-	uv add pytest pytest-asyncio --group dev
+	uv add pytest pytest-asyncio --group dev --bounds exact
 	@if ! grep -q "\[tool.pytest.ini_options\]" pyproject.toml; then \
 		echo '' >> pyproject.toml; \
 		echo '[tool.pytest.ini_options]' >> pyproject.toml; \
@@ -91,10 +103,10 @@ install-pytest: pyproject.toml
 
 .PHONY: install-ty
 install-ty:
-	uv add ty --group dev
+	uv add ty --group dev --bounds exact
 
-CONVENTIONS.md:
-	@echo "Download the CONVENTIONS.md file from the [[https://github.com/unravel-team/metapy][metapy]] project"
+AGENTS.md:
+	@echo "Download the CONVENTIONS.md file from the [[https://github.com/unravel-team/metapy][metapy]] project, then symlink it to AGENTS.md and CLAUDE.md"
 
 .aider.conf.yml:
 	@echo "Download the .aider.conf.yml file from the [[https://github.com/unravel-team/metapy][metapy]] project"
@@ -124,7 +136,7 @@ install-bandit:
 install-hooks: .git/hooks/pre-push
 
 .PHONY: install-dev-tools
-install-dev-tools: install-ruff install-pytest install-ty install-tagref install-bandit install-hooks AGENTS.md .aider.conf.yml .gitignore    ## Install all development tools
+install-dev-tools: install-ruff install-pytest install-ty install-tagref install-bandit install-hooks AGENTS.md .aider.conf.yml .gitignore    ## Install all development tools (Ruff, Pytest, Ty, Tagref, Bandit, Hooks)
 
 .PHONY: check-bandit
 check-bandit:
@@ -297,5 +309,6 @@ rollback:    ## Rollback to the previous version stored in backup
 deploy-build-only:
 	flyctl deploy --config fly.toml --build-only
 	@echo "✅ Build-only Deploy complete! Please update .fly_image manually!"
+
 .PHONY: prepare
 prepare: deploy-build-only backup-current-image    ## Build the latest code and upload image to fly.io. Useful in hot-swap and migration situations
