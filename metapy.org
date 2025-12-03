@@ -460,3 +460,80 @@ with the project.
   .PHONY: install-dev-tools
   install-dev-tools: install-ruff install-pytest install-ty  install-basedpyright install-tagref install-bandit install-hooks AGENTS.md .aider.conf.yml .gitignore    ## Install all development tools (Ruff, Pytest, Ty, Tagref, Bandit, Hooks)
 #+end_src
+
+* The Code Quality section
+:PROPERTIES:
+:CUSTOM_ID: h:B423079B-E66C-4DEE-AC9E-8ED12225EB43
+:CREATED:  [2025-01-03 Fri 21:27]
+:END:
+
+This section contains all the targets for checking and formatting code
+to ensure it meets our quality standards.
+
+** The Checking section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:7AF49050-665C-4BF6-BC19-97B553F7D0B4
+:CREATED:  [2025-01-03 Fri 22:17]
+:END:
+
+This section runs multiple checks in order from fastest to slowest:
+- UV lock check (verifies dependency consistency)
+- Ruff linting (fast Python linting)
+- Tagref (checks code references)
+- Ty type checking (simple type checker)
+- Bandit security analysis
+- BasedPyright type checking (comprehensive type checking)
+
+Run the command =make check= to see if your code is compliant.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: check-bandit
+  check-bandit:
+  	bandit -q -ii -lll -c .bandit.yml -r src/
+
+  .PHONY: check-tagref
+  check-tagref: install-tagref
+  	tagref
+
+  .PHONY: check-uv
+  check-uv:
+  	uv lock --check
+
+  .PHONY: check-ruff
+  check-ruff:
+  	uv run ruff check -n src tests
+
+  .PHONY: check-ty
+  check-ty:
+  	uv run ty check src tests
+
+  .PHONY: check-basedpyright
+  check-basedpyright:
+  	uv run basedpyright src tests
+
+  .PHONY: check
+  check: check-uv check-ruff check-tagref check-ty check-bandit check-basedpyright    ## Check that the code is well linted, well typed, well documented. Fast checks first, slow later
+  	@echo "All checks passed!"
+#+end_src
+
+** The Formatting section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:24CF27D2-DAD9-4A3C-B80E-63DF15591FFD
+:CREATED:  [2025-01-03 Fri 21:18]
+:END:
+
+~ruff~ is used for both linting and formatting. The =format= target
+first fixes any auto-fixable linting issues, then formats the code.
+
+Run the command =make format= to format all your Python source files.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: format
+  format:  ## Format the code using ruff
+  	uv run ruff check -n --fix
+  	uv run ruff format
+
+  .PHONY: megalinter
+  megalinter:
+  	docker run --rm -v "$(HERE):/tmp/lint" oxsecurity/megalinter:v8
+#+end_src
