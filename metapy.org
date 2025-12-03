@@ -686,3 +686,134 @@ enabled for observability.
   server:    ## Run the FastAPI server locally
   	ENABLE_TRACING=true uv run -m unravel.fastapi.main
 #+end_src
+
+* The Deployment section
+:PROPERTIES:
+:CUSTOM_ID: h:B12DAE81-0591-4E36-B8BA-A73B293FB783
+:CREATED:  [2025-01-03 Fri 21:38]
+:END:
+
+This section handles deployment to Fly.io with backup and rollback
+capabilities. The deployment process is designed to be safe and
+reversible.
+
+** The Fly.io Deployment section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:287495BE-C413-48D2-86CC-9741B7E3E7E0
+:CREATED:  [2025-01-03 Fri 21:39]
+:END:
+
+The deployment process includes:
+1. Building the project
+2. Backing up the current production image
+3. Deploying the new version
+4. Auto-tagging successful deployments
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: backup-current-image
+  backup-current-image:
+  	@echo "Backing up currently running image..."
+  	@if [ -f .fly_image ]; then \
+  		mv .fly_image .fly_image.backup; \
+  		echo "✅ Backed up current .fly_image to .fly_image.backup"; \
+  	fi
+
+  .fly_image:
+  	@IMAGE=$$(flyctl image show --app metapy | awk 'NR>2 && NF>0 {print $$2"/"$$3":"$$4; exit}'); \
+  	echo "$$IMAGE" > .fly_image; \
+  	echo "✅ Current production image saved: $$IMAGE"
+
+  .PHONY: tag-deploy-internal
+  tag-deploy-internal: .fly_image
+  	@if [ -f .can_tag ]; then \
+  		TAG="fly-$$(date +%Y-%m-%d)"; \
+  		IMAGE=$$(cat .fly_image); \
+  		if git tag -m "$$(printf 'image: %s' "$$IMAGE")" "$$TAG" 2>/dev/null; then \
+  			echo "✅ Tagged current commit as $$TAG"; \
+  			rm .can_tag; \
+  		else \
+  			echo "⚠️  Tag $$TAG already exists, skipping tag creation"; \
+  			echo "Image: $$IMAGE"; \
+  		fi; \
+  	fi
+
+  .PHONY: deploy-internal
+  deploy-internal:
+  	@echo "Deploying to production..."
+  	@if flyctl deploy --config fly.toml; then \
+  		echo "✅ Deployment successful!"; \
+  	    touch .can_tag; \
+  	else \
+  		echo "❌ Deployment failed!"; \
+  		if [ -f .fly_image.backup ]; then \
+  			echo "Working image in: .fly_image.backup"; \
+  		fi; \
+  		exit 1; \
+  	fi
+
+  .PHONY: deploy
+  deploy: build backup-current-image deploy-internal tag-deploy-internal    ## Deploy with backup and auto-tagging
+#+end_src
+
+** The Rollback section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:9105B76A-A27A-4A63-A2D2-D311CDC9C23E
+:CREATED:  [2025-01-03 Fri 21:35]
+:END:
+
+The rollback feature allows you to quickly revert to the previous
+working version if a deployment fails.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: rollback
+  rollback:    ## Rollback to the previous version stored in backup
+  	@if [ ! -f .fly_image.backup ]; then \
+  		echo "❌ No backup image found (.fly_image.backup missing)"; \
+  		echo "Cannot rollback without a backup image."; \
+  		exit 1; \
+  	fi
+  	@BACKUP_IMAGE=$$(cat .fly_image.backup); \
+  	echo "Rolling back to: $$BACKUP_IMAGE"; \
+  	if flyctl deploy --config fly.toml --image "$$BACKUP_IMAGE"; then \
+  		if [ -f .fly_image ]; then \
+  			BAD_DEPLOY_IMAGE=$$(cat .fly_image); \
+  			echo "Overwriting bad deploy image: $$BAD_DEPLOY_IMAGE"; \
+  		fi; \
+  		mv .fly_image.backup .fly_image; \
+  		echo "✅ Rollback successful! Restored to: $$BACKUP_IMAGE"; \
+  	else \
+  		echo "❌ Rollback failed!"; \
+  		exit 1; \
+  	fi
+#+end_src
+
+** The Build-only Deployment section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:CD7913EA-0DCC-4388-BDF5-9DA5AB0C3531
+:CREATED:  [2025-01-03 Fri 21:31]
+:END:
+
+Sometimes you need to build an image without deploying it (useful for
+hot-swaps or migrations).
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: deploy-build-only
+  deploy-build-only:
+  	flyctl deploy --config fly.toml --build-only
+  	@echo "✅ Build-only Deploy complete! Please update .fly_image manually!"
+
+  .PHONY: prepare
+  prepare: deploy-build-only backup-current-image    ## Build the latest code and upload image to fly.io. Useful in hot-swap and migration situations
+
+  .PHONY: deploy-reuse-image
+  deploy-reuse-image:	.fly_image    ## Deploy only config changes to production, reusing the latest image
+  	@echo "Deploying config-only changes..."
+  	@IMAGE=$$(cat .fly_image); \
+  	echo "Using current production image: $$IMAGE"; \
+  	if flyctl deploy --config fly.toml --image "$$IMAGE"; then \
+  		echo "✅ Config deployment successful!"; \
+  	else \
+  		echo "❌ Config deployment failed!"; \
+  		exit 1; \
+  	fi
+#+end_src
