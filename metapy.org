@@ -271,3 +271,192 @@ structure, and installs dependencies.
   venv: .venv .env    ## Create the .venv and the .env files
   	@echo "Virtual environment created at .venv/"
 #+end_src
+
+* The Development Tools Installation section
+:PROPERTIES:
+:CUSTOM_ID: h:72304956-2E82-4888-9709-8E69AA6D2A56
+:CREATED:  [2025-04-20 Sun 18:52]
+:END:
+
+This section installs all the development tools needed for a modern
+Python project. Each tool is installed separately so you can pick and
+choose what you need.
+
+** The Ruff section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:557E00DD-D217-468E-9F20-FE4FE4C049BE
+:CREATED:  [2025-01-03 Fri 21:13]
+:END:
+
+~ruff~ is an extremely fast Python linter and formatter, written in
+Rust. It combines the functionality of many separate tools into one
+fast package.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: install-ruff
+  install-ruff: pyproject.toml
+  	uv add ruff --group dev
+  	@if ! grep -q "\[tool.ruff.lint\]" pyproject.toml; then \
+  		echo '' >> pyproject.toml; \
+  		echo '[tool.ruff.lint]' >> pyproject.toml; \
+  		echo 'select = [' >> pyproject.toml; \
+  		echo '    # pycodestyle' >> pyproject.toml; \
+  		echo '    "E",' >> pyproject.toml; \
+  		echo '    # Pyflakes' >> pyproject.toml; \
+  		echo '    "F",' >> pyproject.toml; \
+  		echo '    # pyupgrade' >> pyproject.toml; \
+  		echo '    "UP",' >> pyproject.toml; \
+  		echo '    # flake8-bugbear' >> pyproject.toml; \
+  		echo '    "B",' >> pyproject.toml; \
+  		echo '    # flake8-simplify' >> pyproject.toml; \
+  		echo '    "SIM",' >> pyproject.toml; \
+  		echo '    # isort' >> pyproject.toml; \
+  		echo '    "I",' >> pyproject.toml; \
+  		echo ']' >> pyproject.toml; \
+  		echo 'ignore = ["E501"]' >> pyproject.toml; \
+  	fi
+#+end_src
+
+** The Pytest section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:24CF27D2-DAD9-4A3C-B80E-63DF15591FFD
+:CREATED:  [2025-01-03 Fri 21:18]
+:END:
+
+~pytest~ is the de facto standard testing framework for Python. We
+configure it with useful defaults for async testing and logging.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: install-pytest
+  install-pytest: pyproject.toml
+  	uv add pytest pytest-asyncio --group dev
+  	@if ! grep -q "\[tool.pytest.ini_options\]" pyproject.toml; then \
+  		echo '' >> pyproject.toml; \
+  		echo '[tool.pytest.ini_options]' >> pyproject.toml; \
+  		echo 'testpaths = ["tests"]' >> pyproject.toml; \
+  		echo 'addopts = "-v --tb=short"' >> pyproject.toml; \
+  		echo 'asyncio_mode = "auto"' >> pyproject.toml; \
+  		echo 'log_cli = true' >> pyproject.toml; \
+  		echo 'log_cli_level = "INFO"' >> pyproject.toml; \
+  		echo 'log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"' >> pyproject.toml; \
+  		echo 'asyncio_default_fixture_loop_scope = "function"' >> pyproject.toml; \
+  	fi
+#+end_src
+
+** The Ty section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:9EF38A44-B1D5-4357-9DEA-A4BD91202FE5
+:CREATED:  [2025-01-03 Fri 21:40]
+:END:
+
+~ty~ is a simple type checker that complements more complex type
+checkers like mypy or pyright.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: install-ty
+  install-ty:
+  	uv add ty --group dev
+#+end_src
+
+** The BasedPyright section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:B12DAE81-0591-4E36-B8BA-A73B293FB783
+:CREATED:  [2025-01-03 Fri 21:38]
+:END:
+
+~basedpyright~ is a fork of Pyright with more sensible defaults and
+better performance for large codebases.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: install-basedpyright
+  install-basedpyright: pyproject.toml
+  	uv add basedpyright --group dev
+  	@if ! grep -q "\[tool.basedpyright\]" pyproject.toml; then \
+  		echo '' >> pyproject.toml; \
+  		echo '[tool.basedpyright]' >> pyproject.toml; \
+  		echo 'reportAny = false' >> pyproject.toml; \
+  		echo 'reportExplicitAny = false' >> pyproject.toml; \
+  		echo 'reportUnknownMemberType = false' >> pyproject.toml; \
+  		echo 'reportUnknownImport = false      # [tag: reenable_type_check_after_async_work]' >> pyproject.toml; \
+  		echo 'reportUnknownArgumentType = false' >> pyproject.toml; \
+  		echo 'reportUnknownVariableType = false' >> pyproject.toml; \
+  		echo 'reportUnknownLambdaType = false' >> pyproject.toml; \
+  	fi
+#+end_src
+
+** The Tagref section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:287495BE-C413-48D2-86CC-9741B7E3E7E0
+:CREATED:  [2025-01-03 Fri 21:39]
+:END:
+
+~tagref~ is a tool for checking that references to code (like
+[tag:example]) actually exist in the codebase.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: install-tagref
+  install-tagref:
+  	@if ! command -v tagref >/dev/null 2>&1; then \
+  		echo "tagref executable not found. Please install it from https://github.com/stepchowfun/tagref?tab=readme-ov-file#installation-instructions"; \
+  		exit 1; \
+  	fi
+#+end_src
+
+** The Bandit section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:9105B76A-A27A-4A63-A2D2-D311CDC9C23E
+:CREATED:  [2025-01-03 Fri 21:35]
+:END:
+
+~bandit~ is a security linter designed to find common security issues
+in Python code.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: install-bandit
+  install-bandit:
+  	uv tool install bandit
+#+end_src
+
+** The Git Hooks section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:CD7913EA-0DCC-4388-BDF5-9DA5AB0C3531
+:CREATED:  [2025-01-03 Fri 21:31]
+:END:
+
+Git hooks ensure code quality before commits by running checks
+automatically.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .git/hooks/pre-push:
+  	@echo "Setting up Git hooks..."
+  	@cp dev_tools/hooks/pre-push .git/hooks/pre-push
+  	@chmod +x .git/hooks/pre-push
+  	@echo "✅ Git hooks installed successfully!"
+  	@echo "The pre-push hook will run make check, make format, and make test before each push."
+
+  .PHONY: install-hooks
+  install-hooks: .git/hooks/pre-push
+#+end_src
+
+** The Configuration Files section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:F9F04893-395F-4E15-A5FA-BE955ADB0A00
+:CREATED:  [2025-04-20 Sun 20:12]
+:END:
+
+These configuration files are needed for various tools to work properly
+with the project.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  AGENTS.md:
+  	@echo "Download the CONVENTIONS.md file from the [[https://github.com/unravel-team/metapy][metapy]] project, then symlink it to AGENTS.md and CLAUDE.md"
+
+  .aider.conf.yml:
+  	@echo "Download the .aider.conf.yml file from the [[https://github.com/unravel-team/metapy][metapy]] project"
+
+  .gitignore:
+  	@echo "Download the .gitignore file from the [[https://github.com/unravel-team/metapy][metapy]] project"
+
+  .PHONY: install-dev-tools
+  install-dev-tools: install-ruff install-pytest install-ty  install-basedpyright install-tagref install-bandit install-hooks AGENTS.md .aider.conf.yml .gitignore    ## Install all development tools (Ruff, Pytest, Ty, Tagref, Bandit, Hooks)
+#+end_src
