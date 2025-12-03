@@ -216,15 +216,15 @@ megalinter:
 	docker run --rm -v "$(HERE):/tmp/lint" oxsecurity/megalinter:v8
 
 .PHONY: test
-test:    ## Run only the tests in tests/no_reqs folder
-	uv run pytest tests/no_reqs
+test:    ## Run only the unit tests
+	uv run pytest -m "unit"
 
 .PHONY: test-llm
-test-llm:    ## Run only the tests in tests/requires_env folder
-	uv run pytest tests/requires_env
+test-llm:    ## Run only the llm tests
+	uv run pytest -m "llm"
 
 .PHONY: test-integration
-test-integration:    ## Run the integration tests for the code
+test-integration:    ## Run only the integration tests
 	uv run pytest -m "integration"
 
 .PHONY: upgrade-libs
