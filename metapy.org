@@ -20,7 +20,7 @@
 - [[#the-default-goal-section-of-the-makefile][The default goal section of the Makefile]]
 - [[#the-help-target-to-explain-what-you-can-do-with-the-makefile][The help target to explain what you can do with the Makefile]]
 - [[#the-environment-setup-section][The Environment Setup section]]
-  - [[#the-env-and-env-sample-section-of-the-makefile][The .env and .env.sample section of the Makefile]]
+  - [[#the-env-and-envsample-section-of-the-makefile][The .env and .env.sample section of the Makefile]]
   - [[#the-pyprojecttoml-section-of-the-makefile][The pyproject.toml section of the Makefile]]
   - [[#the-virtual-environment-section-of-the-makefile][The Virtual Environment section of the Makefile]]
 - [[#the-development-tools-installation-section][The Development Tools Installation section]]
@@ -57,10 +57,10 @@
 :CREATED:  [2024-12-28 Sat 11:25]
 :END:
 
-Whenever I start a new Python project, I run through a series of
-steps to standardize the project's developer experience. This project
-is an attempt to short-circuit that, and also to note all the steps
-down for my own reference in the future.
+Whenever I start a new Python project, I run through a series of steps
+to standardize the project's developer experience. This project is an
+attempt to short-circuit that, and also to note all the steps down for
+my own reference in the future.
 
 To make a change to Metapy's Makefile, edit this file and then
 type =C-c C-v C-t= (=M-x org-babel-tangle=) to publish the changes.
@@ -350,7 +350,7 @@ configure it with useful defaults for async testing and logging.
 :END:
 
 ~ty~ is a simple type checker that complements more complex type
-checkers like mypy or pyright.
+checkers like basedpyright.
 
 #+begin_src makefile-bsdmake :tangle "Makefile"
   .PHONY: install-ty
@@ -377,7 +377,6 @@ better performance for large codebases.
   		echo 'reportAny = false' >> pyproject.toml; \
   		echo 'reportExplicitAny = false' >> pyproject.toml; \
   		echo 'reportUnknownMemberType = false' >> pyproject.toml; \
-  		echo 'reportUnknownImport = false      # [tag: reenable_type_check_after_async_work]' >> pyproject.toml; \
   		echo 'reportUnknownArgumentType = false' >> pyproject.toml; \
   		echo 'reportUnknownVariableType = false' >> pyproject.toml; \
   		echo 'reportUnknownLambdaType = false' >> pyproject.toml; \
@@ -444,8 +443,8 @@ automatically.
 :CREATED:  [2025-04-20 Sun 20:12]
 :END:
 
-These configuration files are needed for various tools to work properly
-with the project.
+These configuration files are needed for various tools to work
+properly with the project.
 
 #+begin_src makefile-bsdmake :tangle "Makefile"
   AGENTS.md:
@@ -619,8 +618,8 @@ with both the =latest= tag and the git commit hash for traceability.
 :CREATED:  [2025-01-03 Fri 21:35]
 :END:
 
-This section manages the local development infrastructure using
-Docker Compose, including databases, message queues, and other services
+This section manages the local development infrastructure using Docker
+Compose, including databases, message queues, and other services
 needed for development.
 
 ** The Docker Compose section of the Makefile
@@ -629,8 +628,8 @@ needed for development.
 :CREATED:  [2025-01-03 Fri 21:31]
 :END:
 
-Docker Compose is used to orchestrate local development services.
-The =up= target starts all services, while =down= stops them.
+Docker Compose is used to orchestrate local development services. The
+=up= target starts all services, while =down= stops them.
 
 #+begin_src makefile-bsdmake :tangle "Makefile"
   .PHONY: up
@@ -873,6 +872,7 @@ We use ~toc-org-mode~ in this file, to generate titles which are
 compliant with GitHub. Here, we enable ~toc-org-mode~ for this file
 specifically, so that others who open the file in Emacs Org-mode can
 navigate the TOC properly.
+
 
 # Local Variables:
 # eval: (toc-org-mode 1)

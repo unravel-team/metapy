@@ -27,21 +27,6 @@ help:    ## A brief listing of all available commands
 		echo ".env already exists, skipping..."; \
 	fi
 
-tests:
-	mkdir tests
-
-src:
-	mkdir -p src/metapy && touch src/metapy/__init__.py
-
-.venv: pyproject.toml tests src
-	uv venv
-	uv lock
-	uv sync --locked --no-cache
-
-.PHONY: venv
-venv: .venv .env    ## Create the .venv and the .env files
-	@echo "Virtual environment created at .venv/"
-
 pyproject.toml:
 	@if [ ! -f pyproject.toml ]; then \
 		echo "Creating pyproject.toml..."; \
@@ -59,6 +44,21 @@ pyproject.toml:
 	    echo 'requires-python = ">=3.14.0"' >> pyproject.toml; \
 		echo '' >> pyproject.toml; \
 	fi
+
+tests:
+	mkdir tests
+
+src:
+	mkdir -p src/metapy && touch src/metapy/__init__.py
+
+.venv: pyproject.toml tests src
+	uv venv
+	uv lock
+	uv sync --locked --no-cache
+
+.PHONY: venv
+venv: .venv .env    ## Create the .venv and the .env files
+	@echo "Virtual environment created at .venv/"
 
 .PHONY: install-ruff
 install-ruff: pyproject.toml
@@ -111,20 +111,10 @@ install-basedpyright: pyproject.toml
 		echo 'reportAny = false' >> pyproject.toml; \
 		echo 'reportExplicitAny = false' >> pyproject.toml; \
 		echo 'reportUnknownMemberType = false' >> pyproject.toml; \
-		echo 'reportUnknownImport = false      # [tag: reenable_type_check_after_async_work]' >> pyproject.toml; \
 		echo 'reportUnknownArgumentType = false' >> pyproject.toml; \
 		echo 'reportUnknownVariableType = false' >> pyproject.toml; \
 		echo 'reportUnknownLambdaType = false' >> pyproject.toml; \
 	fi
-
-AGENTS.md:
-	@echo "Download the CONVENTIONS.md file from the [[https://github.com/unravel-team/metapy][metapy]] project, then symlink it to AGENTS.md and CLAUDE.md"
-
-.aider.conf.yml:
-	@echo "Download the .aider.conf.yml file from the [[https://github.com/unravel-team/metapy][metapy]] project"
-
-.gitignore:
-	@echo "Download the .gitignore file from the [[https://github.com/unravel-team/metapy][metapy]] project"
 
 .PHONY: install-tagref
 install-tagref:
@@ -146,6 +136,15 @@ install-bandit:
 
 .PHONY: install-hooks
 install-hooks: .git/hooks/pre-push
+
+AGENTS.md:
+	@echo "Download the CONVENTIONS.md file from the [[https://github.com/unravel-team/metapy][metapy]] project, then symlink it to AGENTS.md and CLAUDE.md"
+
+.aider.conf.yml:
+	@echo "Download the .aider.conf.yml file from the [[https://github.com/unravel-team/metapy][metapy]] project"
+
+.gitignore:
+	@echo "Download the .gitignore file from the [[https://github.com/unravel-team/metapy][metapy]] project"
 
 .PHONY: install-dev-tools
 install-dev-tools: install-ruff install-pytest install-ty  install-basedpyright install-tagref install-bandit install-hooks AGENTS.md .aider.conf.yml .gitignore    ## Install all development tools (Ruff, Pytest, Ty, Tagref, Bandit, Hooks)
@@ -174,34 +173,6 @@ check-ty:
 check-basedpyright:
 	uv run basedpyright src tests
 
-.PHONY: build
-build: check     ## Build the deployment artifact
-	uv build
-
-.PHONY: docker-build
-docker-build:   ## Build the FastAPI server Dockerfile
-	docker build -f Dockerfile -t metapy:latest -t metapy:$$(git rev-parse --short HEAD) .
-
-.PHONY: docker-compose-build
-docker-compose-build:  ## Build all the local infra (docker-compose)
-	docker compose build
-
-.PHONY: up
-up:   ## Bring up all the local infra (docker-compose) and synthetic data
-	docker compose up
-
-.PHONY: logs
-logs:
-	docker compose logs
-
-.PHONY: migrate
-migrate:    ## Run Alembic database migrations
-	uv run python -m alembic upgrade head
-
-.PHONY: server
-server:    ## Run the FastAPI server locally
-	ENABLE_TRACING=true uv run -m unravel.fastapi.main
-
 .PHONY: check
 check: check-uv check-ruff check-tagref check-ty check-bandit check-basedpyright    ## Check that the code is well linted, well typed, well documented. Fast checks first, slow later
 	@echo "All checks passed!"
@@ -227,22 +198,25 @@ test-llm:    ## Run only the llm tests
 test-integration:    ## Run only the integration tests
 	uv run pytest -m "integration"
 
-.PHONY: upgrade-libs
-upgrade-libs:    ## Upgrade all the deps to their latest versions
-	uv sync --upgrade
+.PHONY: build
+build: check     ## Build the deployment artifact
+	uv build
 
-.PHONY: clean-cache
-clean-cache:    ## Clean UV Cache (only needed in extreme conditions)
-	@echo "Cleaning cache! This removes all downloaded deps!"
-	uv cache clean
+.PHONY: docker-build
+docker-build:   ## Build the FastAPI server Dockerfile
+	docker build -f Dockerfile -t metapy:latest -t metapy:$$(git rev-parse --short HEAD) .
 
-.PHONY: clean
-clean:     ## Delete any existing artifacts
-	find . -type f -name "*.pyc" -delete
-	find . -type d -name "__pycache__" -exec rm -rf {} +
-	rm -rf build/
-	rm -rf dist/
-	rm -rf *.egg-info/
+.PHONY: docker-compose-build
+docker-compose-build:  ## Build all the local infra (docker-compose)
+	docker compose build
+
+.PHONY: up
+up:   ## Bring up all the local infra (docker-compose) and synthetic data
+	docker compose up
+
+.PHONY: logs
+logs:
+	docker compose logs
 
 .PHONY: down
 down:       ## Bring down all the local infra (docker-compose)
@@ -258,6 +232,14 @@ down-clean:  ## Bring down all the local infra and delete volumes
 	else \
 		echo "Aborted."; \
 	fi
+
+.PHONY: migrate
+migrate:    ## Run Alembic database migrations
+	uv run python -m alembic upgrade head
+
+.PHONY: server
+server:    ## Run the FastAPI server locally
+	ENABLE_TRACING=true uv run -m unravel.fastapi.main
 
 .PHONY: backup-current-image
 backup-current-image:
@@ -303,18 +285,6 @@ deploy-internal:
 .PHONY: deploy
 deploy: build backup-current-image deploy-internal tag-deploy-internal    ## Deploy with backup and auto-tagging
 
-.PHONY: deploy-reuse-image
-deploy-reuse-image:	.fly_image    ## Deploy only config changes to production, reusing the latest image
-	@echo "Deploying config-only changes..."
-	@IMAGE=$$(cat .fly_image); \
-	echo "Using current production image: $$IMAGE"; \
-	if flyctl deploy --config fly.toml --image "$$IMAGE"; then \
-		echo "✅ Config deployment successful!"; \
-	else \
-		echo "❌ Config deployment failed!"; \
-		exit 1; \
-	fi
-
 .PHONY: rollback
 rollback:    ## Rollback to the previous version stored in backup
 	@if [ ! -f .fly_image.backup ]; then \
@@ -343,3 +313,32 @@ deploy-build-only:
 
 .PHONY: prepare
 prepare: deploy-build-only backup-current-image    ## Build the latest code and upload image to fly.io. Useful in hot-swap and migration situations
+
+.PHONY: deploy-reuse-image
+deploy-reuse-image:	.fly_image    ## Deploy only config changes to production, reusing the latest image
+	@echo "Deploying config-only changes..."
+	@IMAGE=$$(cat .fly_image); \
+	echo "Using current production image: $$IMAGE"; \
+	if flyctl deploy --config fly.toml --image "$$IMAGE"; then \
+		echo "✅ Config deployment successful!"; \
+	else \
+		echo "❌ Config deployment failed!"; \
+		exit 1; \
+	fi
+
+.PHONY: upgrade-libs
+upgrade-libs:    ## Upgrade all the deps to their latest versions
+	uv sync --upgrade
+
+.PHONY: clean-cache
+clean-cache:    ## Clean UV Cache (only needed in extreme conditions)
+	@echo "Cleaning cache! This removes all downloaded deps!"
+	uv cache clean
+
+.PHONY: clean
+clean:     ## Delete any existing artifacts
+	find . -type f -name "*.pyc" -delete
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	rm -rf build/
+	rm -rf dist/
+	rm -rf *.egg-info/
