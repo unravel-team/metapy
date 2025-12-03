@@ -108,3 +108,75 @@ Our PHONY targets are as follows:
    - =clean= (Cleaning artifacts. See: [[#h:DDEC523F-F4A5-4506-A1DA-3290336D6527][The Cleaning section of the Makefile]])
 
 PHONY targets are declared right above the target itself, for easy maintainability and readability
+
+* The common variables section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:B3833E1E-F328-4DDB-B5CD-31086232DEE2
+:CREATED:  [2024-12-28 Sat 11:53]
+:END:
+
+These are variables we use in some of the other =Makefile= targets.
+You can ignore them for now and we'll review them when we use them.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  HOME := $(shell echo $$HOME)
+  HERE := $(shell echo $$PWD)
+#+end_src
+
+* Set Bash as the shell for executing commands
+:PROPERTIES:
+:CUSTOM_ID: h:06956487-A480-43D1-94EC-B9148CE6F2D6
+:CREATED:  [2024-12-28 Sat 12:04]
+:END:
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  # Set bash instead of sh for the @if [[ conditions,
+  # and use the usual safety flags:
+  SHELL = /bin/bash -Eeu
+#+end_src
+
+* The default goal section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:FA6CC44F-CA8C-4E8B-8613-233C00F5F7EA
+:CREATED:  [2024-12-28 Sat 11:55]
+:END:
+
+The =.DEFAULT_GOAL= is what runs when we only run the ~make~ command
+with no directive. In our case, we want this to print the help options
+and exit, so that the user has a clear idea of what is possible with
+this Makefile.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .DEFAULT_GOAL := help
+#+end_src
+
+* The help target to explain what you can do with the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:F4650D06-3125-4FC6-A426-A4B257C86B25
+:CREATED:  [2025-01-30 Thu 14:19]
+:END:
+
+Here, we use ~awk~ to filter out all the targets which have a
+doc-string. This is the "public API" of the Makefile, so to speak.
+
+=/^[a-zA-Z0-9_-]+:.*##/= is a pattern that matches lines starting with
+a target name (letters, numbers, underscores, or hyphens) followed by
+a colon, followed by ~##~ somewhere in the line. This finds Makefile
+target definitions.
+
+In the print command:
+- =%-25s= formats the target name left-aligned in 25 characters
+- =substr($$1, 1, length($$1)-1)= takes the target name (first field)
+  without the trailing colon
+- =substr($$0, index($$0,"##")+3)= extracts everything after ## (the
+  comment)
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: help
+  help:    ## A brief listing of all available commands
+  	@awk '/^[a-zA-Z0-9_-]+:.*##/ { \
+  		printf "%-25s # %s\n", \
+  		substr($$1, 1, length($$1)-1), \
+  		substr($$0, index($$0,"##")+3) \
+  	}' $(MAKEFILE_LIST)
+#+end_src
