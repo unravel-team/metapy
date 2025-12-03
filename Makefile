@@ -102,6 +102,21 @@ install-pytest: pyproject.toml
 install-ty:
 	uv add ty --group dev
 
+.PHONY: install-basedpyright
+install-basedpyright: pyproject.toml
+	uv add basedpyright --group dev
+	@if ! grep -q "\[tool.basedpyright\]" pyproject.toml; then \
+		echo '' >> pyproject.toml; \
+		echo '[tool.basedpyright]' >> pyproject.toml; \
+		echo 'reportAny = false' >> pyproject.toml; \
+		echo 'reportExplicitAny = false' >> pyproject.toml; \
+		echo 'reportUnknownMemberType = false' >> pyproject.toml; \
+		echo 'reportUnknownImport = false      # [tag: reenable_type_check_after_async_work]' >> pyproject.toml; \
+		echo 'reportUnknownArgumentType = false' >> pyproject.toml; \
+		echo 'reportUnknownVariableType = false' >> pyproject.toml; \
+		echo 'reportUnknownLambdaType = false' >> pyproject.toml; \
+	fi
+
 AGENTS.md:
 	@echo "Download the CONVENTIONS.md file from the [[https://github.com/unravel-team/metapy][metapy]] project, then symlink it to AGENTS.md and CLAUDE.md"
 
@@ -133,7 +148,7 @@ install-bandit:
 install-hooks: .git/hooks/pre-push
 
 .PHONY: install-dev-tools
-install-dev-tools: install-ruff install-pytest install-ty install-tagref install-bandit install-hooks AGENTS.md .aider.conf.yml .gitignore    ## Install all development tools (Ruff, Pytest, Ty, Tagref, Bandit, Hooks)
+install-dev-tools: install-ruff install-pytest install-ty  install-basedpyright install-tagref install-bandit install-hooks AGENTS.md .aider.conf.yml .gitignore    ## Install all development tools (Ruff, Pytest, Ty, Tagref, Bandit, Hooks)
 
 .PHONY: check-bandit
 check-bandit:
@@ -150,6 +165,10 @@ check-ruff:
 .PHONY: check-ty
 check-ty:
 	uv run ty check src tests
+
+.PHONY: check-basedpyright
+check-basedpyright:
+	uv run basedpyright src tests
 
 .PHONY: build
 build: check     ## Build the deployment artifact
