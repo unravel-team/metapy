@@ -36,7 +36,7 @@ src:
 .venv: pyproject.toml tests src
 	uv venv
 	uv lock
-	uv sync --frozen --no-cache
+	uv sync --locked --no-cache
 
 .PHONY: venv
 venv: .venv .env    ## Create the .venv and the .env files
