@@ -264,7 +264,7 @@ backup-current-image:
 .PHONY: tag-deploy-internal
 tag-deploy-internal: .fly_image
 	@if [ -f .can_tag ]; then \
-		TAG="stable-$$(date +%Y-%m-%d)"; \
+		TAG="fly-$$(date +%Y-%m-%d)"; \
 		IMAGE=$$(cat .fly_image); \
 		if git tag -m "$$(printf 'image: %s' "$$IMAGE")" "$$TAG" 2>/dev/null; then \
 			echo "✅ Tagged current commit as $$TAG"; \
