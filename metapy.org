@@ -569,3 +569,46 @@ tests, or =make test-integration= for integration tests.
   test-integration:    ## Run only the integration tests
   	uv run pytest -m "integration"
 #+end_src
+
+* The Build section
+:PROPERTIES:
+:CUSTOM_ID: h:9EF38A44-B1D5-4357-9DEA-A4BD91202FE5
+:CREATED:  [2025-01-03 Fri 21:40]
+:END:
+
+This section contains targets for building the project in different
+formats - from Python packages to Docker images.
+
+** The UV Build section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:B12DAE81-0591-4E36-B8BA-A73B293FB783
+:CREATED:  [2025-01-03 Fri 21:38]
+:END:
+
+The ~build~ target creates a Python package using UV. It runs the
+quality checks first to ensure we're not building broken code.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: build
+  build: check     ## Build the deployment artifact
+  	uv build
+#+end_src
+
+** The Docker Build section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:287495BE-C413-48D2-86CC-9741B7E3E7E0
+:CREATED:  [2025-01-03 Fri 21:39]
+:END:
+
+Docker builds create container images for deployment. We tag images
+with both the =latest= tag and the git commit hash for traceability.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: docker-build
+  docker-build:   ## Build the FastAPI server Dockerfile
+  	docker build -f Dockerfile -t metapy:latest -t metapy:$$(git rev-parse --short HEAD) .
+
+  .PHONY: docker-compose-build
+  docker-compose-build:  ## Build all the local infra (docker-compose)
+  	docker compose build
+#+end_src
