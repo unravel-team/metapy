@@ -152,7 +152,7 @@ install-dev-tools: install-ruff install-pytest install-ty  install-basedpyright 
 
 .PHONY: check-bandit
 check-bandit:
-	bandit -c .bandit.yml -r src/
+	bandit -q -ii -lll -c .bandit.yml -r src/
 
 .PHONY: check-tagref
 check-tagref: install-tagref
