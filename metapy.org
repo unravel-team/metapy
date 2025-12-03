@@ -537,3 +537,35 @@ Run the command =make format= to format all your Python source files.
   megalinter:
   	docker run --rm -v "$(HERE):/tmp/lint" oxsecurity/megalinter:v8
 #+end_src
+
+* The Testing section
+:PROPERTIES:
+:CUSTOM_ID: h:CD7913EA-0DCC-4388-BDF5-9DA5AB0C3531
+:CREATED:  [2025-01-03 Fri 21:31]
+:END:
+
+We use ~pytest~ for testing with markers to categorize different types
+of tests. This allows us to run specific test suites depending on what
+we want to validate.
+
+The test categories are:
+- =unit=: Standard unit tests that don't require external services
+- =llm=: Tests that interact with LLM APIs (can be slow and expensive)
+- =integration=: Tests that require external infrastructure
+
+Run the command =make test= for unit tests, =make test-llm= for LLM
+tests, or =make test-integration= for integration tests.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: test
+  test:    ## Run only the unit tests
+  	uv run pytest -m "unit"
+
+  .PHONY: test-llm
+  test-llm:    ## Run only the llm tests
+  	uv run pytest -m "llm"
+
+  .PHONY: test-integration
+  test-integration:    ## Run only the integration tests
+  	uv run pytest -m "integration"
+#+end_src
