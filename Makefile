@@ -246,7 +246,18 @@ clean:     ## Delete any existing artifacts
 
 .PHONY: down
 down:       ## Bring down all the local infra (docker-compose)
-	docker compose down -v
+	docker compose down
+
+.PHONY: down-clean
+down-clean:  ## Bring down all the local infra and delete volumes
+	@echo "Warning: Deleting volumes will lead to data loss. You will start from scratch and this may introduce bugs (e.g., if your code does not work with existing data in postgres)."
+	@read -p "Are you sure you want to proceed? (yes/no): " confirm; \
+	if [ "$$confirm" = "yes" ]; then \
+		docker compose down -v; \
+		echo "Volumes deleted."; \
+	else \
+		echo "Aborted."; \
+	fi
 
 .PHONY: backup-current-image
 backup-current-image:
