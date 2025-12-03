@@ -817,3 +817,52 @@ hot-swaps or migrations).
   		exit 1; \
   	fi
 #+end_src
+
+* The Maintenance section
+:PROPERTIES:
+:CUSTOM_ID: h:DDEC523F-F4A5-4506-A1DA-3290336D6527
+:CREATED:  [2025-01-03 Fri 21:22]
+:END:
+
+This section contains targets for maintaining the project, including
+dependency upgrades and cleanup operations.
+
+** The Dependency Upgrade section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:24CF27D2-DAD9-4A3C-B80E-63DF15591FFD
+:CREATED:  [2025-01-03 Fri 21:18]
+:END:
+
+We use UV's built-in upgrade functionality to keep dependencies
+up-to-date. This is safer than manual editing of the pyproject.toml
+file.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: upgrade-libs
+  upgrade-libs:    ## Upgrade all the deps to their latest versions
+  	uv sync --upgrade
+#+end_src
+
+** The Cleaning section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:944B86CB-099C-47F9-9F91-DB446EF68012
+:CREATED:  [2024-12-28 Sat 16:40]
+:END:
+
+Cleaning targets remove generated files and caches. The =clean-cache=
+target is more aggressive and should only be used when necessary.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: clean-cache
+  clean-cache:    ## Clean UV Cache (only needed in extreme conditions)
+  	@echo "Cleaning cache! This removes all downloaded deps!"
+  	uv cache clean
+
+  .PHONY: clean
+  clean:     ## Delete any existing artifacts
+  	find . -type f -name "*.pyc" -delete
+  	find . -type d -name "__pycache__" -exec rm -rf {} +
+  	rm -rf build/
+  	rm -rf dist/
+  	rm -rf *.egg-info/
+#+end_src
