@@ -180,3 +180,94 @@ In the print command:
   		substr($$0, index($$0,"##")+3) \
   	}' $(MAKEFILE_LIST)
 #+end_src
+
+* The Environment Setup section
+:PROPERTIES:
+:CUSTOM_ID: h:1438EEBB-FA57-476C-A06E-D4A61EDF2C17
+:CREATED:  [2025-04-20 Sun 19:40]
+:END:
+
+In this section, we set up the basic environment needed for a Python
+project. This includes creating the necessary configuration files and
+directory structure.
+
+** The .env and .env.sample section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:DDEC523F-F4A5-4506-A1DA-3290336D6527
+:CREATED:  [2025-01-03 Fri 21:22]
+:END:
+
+Environment variables are crucial for Python applications. We create a
+=.env.sample= file as a template, and then copy it to =.env= if it
+doesn't exist. This follows 12-factor app principles.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .env.sample:
+  	touch .env.sample
+
+  .env: .env.sample    ## Copy .env.sample to .env if .env doesn't exist
+  	@if [ ! -f .env ]; then \
+  		echo "Creating .env from .env.sample..."; \
+  		cp .env.sample .env; \
+  		echo "✓ .env created. Please edit it with your actual values."; \
+  	else \
+  		echo ".env already exists, skipping..."; \
+  	fi
+#+end_src
+
+** The pyproject.toml section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:24CF27D2-DAD9-4A3C-B80E-63DF15591FFD
+:CREATED:  [2025-01-03 Fri 21:18]
+:END:
+
+The =pyproject.toml= file is the modern standard for Python project
+configuration. We create a basic template using hatchling as the build
+backend, which is simple and reliable.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  pyproject.toml:
+  	@if [ ! -f pyproject.toml ]; then \
+  		echo "Creating pyproject.toml..."; \
+  		echo '[build-system]' > pyproject.toml; \
+  		echo 'requires = ["hatchling"]' >> pyproject.toml; \
+  		echo 'build-backend = "hatchling.build"' >> pyproject.toml; \
+  		echo '' >> pyproject.toml; \
+  		echo '[project]' >> pyproject.toml; \
+  		echo 'name = "metapy"' >> pyproject.toml; \
+  		echo 'version = "0.1.0"' >> pyproject.toml; \
+  		echo 'description = ""' >> pyproject.toml; \
+  		echo 'authors = []' >> pyproject.toml; \
+  		echo 'keywords = []' >> pyproject.toml; \
+  		echo 'packages = [{include="src"}]' >> pyproject.toml; \
+  	    echo 'requires-python = ">=3.14.0"' >> pyproject.toml; \
+  		echo '' >> pyproject.toml; \
+  	fi
+#+end_src
+
+** The Virtual Environment section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:944B86CB-099C-47F9-9F91-DB446EF68012
+:CREATED:  [2024-12-28 Sat 16:40]
+:END:
+
+We use UV for fast and reliable Python package management. The =venv=
+target creates the virtual environment, sets up the basic directory
+structure, and installs dependencies.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  tests:
+  	mkdir tests
+
+  src:
+  	mkdir -p src/metapy && touch src/metapy/__init__.py
+
+  .venv: pyproject.toml tests src
+  	uv venv
+  	uv lock
+  	uv sync --locked --no-cache
+
+  .PHONY: venv
+  venv: .venv .env    ## Create the .venv and the .env files
+  	@echo "Virtual environment created at .venv/"
+#+end_src
