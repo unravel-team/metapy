@@ -64,3 +64,47 @@ down for my own reference in the future.
 
 To make a change to Metapy's Makefile, edit this file and then
 type =C-c C-v C-t= (=M-x org-babel-tangle=) to publish the changes.
+
+* The PHONY section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:207937CB-7D6B-4EA3-AF7A-BE36057F8D89
+:CREATED:  [2024-12-28 Sat 11:30]
+:END:
+
+A target in a Makefile is meant to be an actual file that the
+"execution" of the target creates. Sometimes, we want "actions" as
+target -- think =make check= or =make build=, we do not expect a file
+called ~check~ or a file called ~build~ to be created. We call these
+targets as phony targets, and informing ~make~ helps it avoid checking
+for the existence of these files.
+
+Our PHONY targets are as follows:
+
+1. *Environment Setup* (You only need to do this once)
+   - =venv= (Creating virtual environment and .env file. See: [[#h:944B86CB-099C-47F9-9F91-DB446EF68012][The Virtual Environment section of the Makefile]])
+   - =install-dev-tools= (Installing all development tools. See: [[#h:1438EEBB-FA57-476C-A06E-D4A61EDF2C17][The Development Tools Installation section]])
+2. *Code Quality*
+   - =check= (Running all quality checks. See: [[#h:7AF49050-665C-4BF6-BC19-97B553F7D0B4][The Checking section of the Makefile]])
+   - =format= (Formatting code with ruff. See: [[#h:24CF27D2-DAD9-4A3C-B80E-63DF15591FFD][The Formatting section of the Makefile]])
+3. *Testing our Python project*
+   - =test= (Running unit tests. See: [[#h:CD7913EA-0DCC-4388-BDF5-9DA5AB0C3531][The Testing section]])
+   - =test-llm= (Running LLM tests)
+   - =test-integration= (Running integration tests)
+4. *Building our Python project*
+   - =build= (Building deployment artifact. See: [[#h:9EF38A44-B1D5-4357-9DEA-A4BD91202FE5][The UV Build section of the Makefile]])
+   - =docker-build= (Building Docker image. See: [[#h:B12DAE81-0591-4E36-B8BA-A73B293FB783][The Docker Build section of the Makefile]])
+   - =docker-compose-build= (Building local infrastructure)
+5. *Running Infrastructure*
+   - =up= (Starting local infrastructure. See: [[#h:287495BE-C413-48D2-86CC-9741B7E3E7E0][The Docker Compose section of the Makefile]])
+   - =down= (Stopping local infrastructure)
+   - =migrate= (Running database migrations. See: [[#h:9105B76A-A27A-4A63-A2D2-D311CDC9C23E][The Database Migration section of the Makefile]])
+   - =server= (Running FastAPI server. See: [[#h:16E6BE64-E940-45CD-AEE7-82D197E6B2DA][The FastAPI Server section of the Makefile]])
+6. *Deploying our Python project to Production*
+   - =deploy= (Deploying to production with backup. See: [[#h:F4650D06-3125-4FC6-A426-A4B257C86B25][The Fly.io Deployment section of the Makefile]])
+   - =rollback= (Rolling back to previous version. See: [[#h:557E00DD-D217-468E-9F20-FE4FE4C049BE][The Rollback section of the Makefile]])
+   - =prepare= (Building and uploading image. See: [[#h:24CF27D2-DAD9-4A3C-B80E-63DF15591FFD][The Build-only Deployment section of the Makefile]])
+7. *Maintenance*
+   - =upgrade-libs= (Upgrading dependencies. See: [[#h:9105B76A-A27A-4A63-A2D2-D311CDC9C23E][The Dependency Upgrade section of the Makefile]])
+   - =clean= (Cleaning artifacts. See: [[#h:DDEC523F-F4A5-4506-A1DA-3290336D6527][The Cleaning section of the Makefile]])
+
+PHONY targets are declared right above the target itself, for easy maintainability and readability
