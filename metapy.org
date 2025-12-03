@@ -1,0 +1,66 @@
+#+title:  Tooling configuration for brand new Python projects
+#+author: Vedang Manerikar
+#+email: vedang@unravel.tech
+#+language: en
+#+options: ':t toc:nil num:nil author:t email:t
+
+* Quickstart
+
+1. Copy over the =Makefile= to your Python project.
+2. Run =make help= to see what you can do.
+
+[ A short thread on what using Metapy looks like: <link> (<date>) ]
+
+* Table of Contents :TOC:
+- [[#quickstart][Quickstart]]
+- [[#introduction][Introduction]]
+- [[#the-phony-section-of-the-makefile][The PHONY section of the Makefile]]
+- [[#the-common-variables-section-of-the-makefile][The common variables section of the Makefile]]
+- [[#set-bash-as-the-shell-for-executing-commands][Set Bash as the shell for executing commands]]
+- [[#the-default-goal-section-of-the-makefile][The default goal section of the Makefile]]
+- [[#the-help-target-to-explain-what-you-can-do-with-the-makefile][The help target to explain what you can do with the Makefile]]
+- [[#the-environment-setup-section][The Environment Setup section]]
+  - [[#the-env-and-env-sample-section-of-the-makefile][The .env and .env.sample section of the Makefile]]
+  - [[#the-pyprojecttoml-section-of-the-makefile][The pyproject.toml section of the Makefile]]
+  - [[#the-virtual-environment-section-of-the-makefile][The Virtual Environment section of the Makefile]]
+- [[#the-development-tools-installation-section][The Development Tools Installation section]]
+  - [[#the-ruff-section-of-the-makefile][The Ruff section of the Makefile]]
+  - [[#the-pytest-section-of-the-makefile][The Pytest section of the Makefile]]
+  - [[#the-ty-section-of-the-makefile][The Ty section of the Makefile]]
+  - [[#the-basedpyright-section-of-the-makefile][The BasedPyright section of the Makefile]]
+  - [[#the-tagref-section-of-the-makefile][The Tagref section of the Makefile]]
+  - [[#the-bandit-section-of-the-makefile][The Bandit section of the Makefile]]
+  - [[#the-git-hooks-section-of-the-makefile][The Git Hooks section of the Makefile]]
+  - [[#the-configuration-files-section-of-the-makefile][The Configuration Files section of the Makefile]]
+- [[#the-code-quality-section][The Code Quality section]]
+  - [[#the-checking-section-of-the-makefile][The Checking section of the Makefile]]
+  - [[#the-formatting-section-of-the-makefile][The Formatting section of the Makefile]]
+- [[#the-testing-section][The Testing section]]
+- [[#the-build-section][The Build section]]
+  - [[#the-uv-build-section-of-the-makefile][The UV Build section of the Makefile]]
+  - [[#the-docker-build-section-of-the-makefile][The Docker Build section of the Makefile]]
+- [[#the-infrastructure-section][The Infrastructure section]]
+  - [[#the-docker-compose-section-of-the-makefile][The Docker Compose section of the Makefile]]
+  - [[#the-database-migration-section-of-the-makefile][The Database Migration section of the Makefile]]
+  - [[#the-fastapi-server-section-of-the-makefile][The FastAPI Server section of the Makefile]]
+- [[#the-deployment-section][The Deployment section]]
+  - [[#the-flyio-deployment-section-of-the-makefile][The Fly.io Deployment section of the Makefile]]
+  - [[#the-rollback-section-of-the-makefile][The Rollback section of the Makefile]]
+  - [[#the-build-only-deployment-section-of-the-makefile][The Build-only Deployment section of the Makefile]]
+- [[#the-maintenance-section][The Maintenance section]]
+  - [[#the-dependency-upgrade-section-of-the-makefile][The Dependency Upgrade section of the Makefile]]
+  - [[#the-cleaning-section-of-the-makefile][The Cleaning section of the Makefile]]
+
+* Introduction
+:PROPERTIES:
+:CUSTOM_ID: h:CDD118FE-59DE-4B59-B919-22DF82087BA1
+:CREATED:  [2024-12-28 Sat 11:25]
+:END:
+
+Whenever I start a new Python project, I run through a series of
+steps to standardize the project's developer experience. This project
+is an attempt to short-circuit that, and also to note all the steps
+down for my own reference in the future.
+
+To make a change to Metapy's Makefile, edit this file and then
+type =C-c C-v C-t= (=M-x org-babel-tangle=) to publish the changes.
