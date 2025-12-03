@@ -158,6 +158,10 @@ check-bandit:
 check-tagref: install-tagref
 	tagref
 
+.PHONY: check-uv
+check-uv:
+	uv lock --check
+
 .PHONY: check-ruff
 check-ruff:
 	uv run ruff check -n src tests
@@ -199,7 +203,7 @@ server:    ## Run the FastAPI server locally
 	ENABLE_TRACING=true uv run -m unravel.fastapi.main
 
 .PHONY: check
-check: check-ruff check-tagref check-ty check-bandit    ## Check that the code is well linted, well typed, well documented
+check: check-uv check-ruff check-tagref check-ty check-bandit check-basedpyright    ## Check that the code is well linted, well typed, well documented. Fast checks first, slow later
 	@echo "All checks passed!"
 
 .PHONY: format
