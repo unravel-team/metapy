@@ -612,3 +612,77 @@ with both the =latest= tag and the git commit hash for traceability.
   docker-compose-build:  ## Build all the local infra (docker-compose)
   	docker compose build
 #+end_src
+
+* The Infrastructure section
+:PROPERTIES:
+:CUSTOM_ID: h:9105B76A-A27A-4A63-A2D2-D311CDC9C23E
+:CREATED:  [2025-01-03 Fri 21:35]
+:END:
+
+This section manages the local development infrastructure using
+Docker Compose, including databases, message queues, and other services
+needed for development.
+
+** The Docker Compose section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:CD7913EA-0DCC-4388-BDF5-9DA5AB0C3531
+:CREATED:  [2025-01-03 Fri 21:31]
+:END:
+
+Docker Compose is used to orchestrate local development services.
+The =up= target starts all services, while =down= stops them.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: up
+  up:   ## Bring up all the local infra (docker-compose) and synthetic data
+  	docker compose up
+
+  .PHONY: logs
+  logs:
+  	docker compose logs
+
+  .PHONY: down
+  down:       ## Bring down all the local infra (docker-compose)
+  	docker compose down
+
+  .PHONY: down-clean
+  down-clean:  ## Bring down all the local infra and delete volumes
+  	@echo "Warning: Deleting volumes will lead to data loss. You will start from scratch and this may introduce bugs (e.g., if your code does not work with existing data in postgres)."
+  	@read -p "Are you sure you want to proceed? (yes/no): " confirm; \
+  	if [ "$$confirm" = "yes" ]; then \
+  		docker compose down -v; \
+  		echo "Volumes deleted."; \
+  	else \
+  		echo "Aborted."; \
+  	fi
+#+end_src
+
+** The Database Migration section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:24CF27D2-DAD9-4A3C-B80E-63DF15591FFD
+:CREATED:  [2025-01-03 Fri 21:18]
+:END:
+
+We use Alembic for database migrations. The =migrate= target runs all
+pending migrations to bring the database schema up to date.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: migrate
+  migrate:    ## Run Alembic database migrations
+  	uv run python -m alembic upgrade head
+#+end_src
+
+** The FastAPI Server section of the Makefile
+:PROPERTIES:
+:CUSTOM_ID: h:9EF38A44-B1D5-4357-9DEA-A4BD91202FE5
+:CREATED:  [2025-01-03 Fri 21:40]
+:END:
+
+The =server= target runs the FastAPI application locally with tracing
+enabled for observability.
+
+#+begin_src makefile-bsdmake :tangle "Makefile"
+  .PHONY: server
+  server:    ## Run the FastAPI server locally
+  	ENABLE_TRACING=true uv run -m unravel.fastapi.main
+#+end_src
