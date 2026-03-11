@@ -4,6 +4,14 @@
 #+language: en
 #+options: ':t toc:nil num:nil author:t email:t
 
+* ⚠️ Project Archived
+
+This repository has been archived. All language-specific metaprogramming projects have been consolidated into a single repository:
+
+👉 [[https://github.com/unravel-team/metaprogramming][unravel-team/metaprogramming]]
+
+Please use the new unified repository for all future development.
+
 * Quickstart
 
 1. Copy over the =Makefile= to your Python project.
